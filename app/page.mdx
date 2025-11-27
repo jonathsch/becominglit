@@ -1,0 +1,147 @@
+import Header from "components/header";
+import Video from "components/video";
+import Figure from "components/figure";
+import Image from "components/image";
+import YouTubeVideo from "components/ytVideo";
+import { PointLightViewer } from "components/interactivePointRelight";
+import { InteractiveRelightViewer } from "components/interactiveRelight";
+import CodeBlock from "components/codeBlock";
+import { basePath } from "./settings";
+
+import { RiGithubLine, RiDatabase2Line, RiYoutubeFill } from "react-icons/ri";
+import { SiArxiv } from "react-icons/si";
+import { BsFileEarmarkPdf } from "react-icons/bs";
+
+export const components = {pre: CodeBlock}
+
+export const metadata = {
+  title: "BecomingLit: Relightable Gaussian Avatars with Hybrid Neural Shading",
+  description: "Photorealistic relightable head avatars with a new OLAT dataset of faces.",
+  openGraph: {
+    title: "BecomingLit: Relightable Gaussian Avatars with Hybrid Neural Shading",
+    description: "Photorealistic relightable head avatars with a new OLAT dataset of faces.",
+  },
+  twitter: {
+    card: "/thumbnail.png",
+    creator: "@jnthnschmdt",
+  }
+};
+
+<Header
+title="BecomingLit: Relightable Gaussian Avatars with Hybrid Neural Shading"
+conference="NeurIPS 2025"
+authors={[
+    {
+      name: "Jonathan Schmidt",
+      url: "https://niessnerlab.org/members/jonathan_schmidt/profile.html",
+      institution: "Technical University of Munich",
+      notes: [],
+    },
+    {
+      name: "Simon Giebenhain",
+      url: "https://niessnerlab.org/members/simon_giebenhain/profile.html",
+      institution: "Technical University of Munich",
+      notes: [],
+    },
+    {
+      name: "Matthias Niessner",
+      url: "https://niessnerlab.org/members/matthias_niessner/profile.html",
+      institution: "Technical University of Munich",
+      notes: [],
+    },
+  ]}
+  links={[
+    {
+      name: "Paper",
+      url: "https://arxiv.org/pdf/2506.06271",
+      icon: <BsFileEarmarkPdf size={22}/>,
+    },
+    {
+      name: "arXiv",
+      url: "https://arxiv.org/abs/2506.06271",
+      icon: <SiArxiv size={22}/>,
+    },
+    {
+      name: "Video",
+      url: "https://youtu.be/xPyeIqKdszA",
+      icon: <RiYoutubeFill size={22}/>,
+    },
+    {
+      name: "Code",
+      url: "https://github.com/jonathsch/becominglit",
+      icon: <RiGithubLine size={22}/>,
+    },
+    {
+      name: "Data",
+      url: "https://github.com/jonathsch/becominglit-dataset",
+      icon: <RiDatabase2Line size={22}/>,
+    },
+  ]} />
+
+<div className="text-center">
+    <Video source={`${basePath}/fastforward.mp4`} />
+    <span className="text-xl"><i>BecomingLit</i> reconstructs intrinsically decomposed head avatars for real-time relighting and animation.</span>
+</div>
+
+<div style={{ textAlign: 'center', marginTop: '3rem' }}>
+## Abstract
+</div>
+
+<div className="text-justify">
+We introduce _BecomingLit_, a novel method for reconstructing relightable, high-resolution head avatars that can be rendered from novel viewpoints at interactive rates. Therefore, we propose a new low-cost light stage capture setup, tailored specifically towards capturing faces. Using this setup, we collect a novel dataset consisting of diverse multi-view sequences of numerous subjects under varying illumination conditions and facial expressions. By leveraging our new dataset, we introduce a new relightable avatar representation based on 3D Gaussian primitives that we animate with a parametric head model and an expression-dependent dynamics module. We propose a new hybrid neural shading approach, combining a neural diffuse BRDF with an analytical specular term. Our method reconstructs disentangled materials from our dynamic light stage recordings and enables all-frequency relighting of our avatars with both point lights and environment maps. In addition, our avatars can easily be animated and controlled from monocular videos. We validate our approach in extensive experiments on our dataset, where we consistently outperform existing state-of-the-art methods in relighting and reenactment by a significant margin.
+</div>
+
+
+<div style={{ textAlign: 'center', marginTop: '3rem' }}>
+## Video
+</div>
+
+<Figure 
+image={<YouTubeVideo videoId="xPyeIqKdszA" />} 
+caption={<></>} 
+/>
+
+<div style={{ textAlign: 'center', marginTop: '3rem' }}>
+## Method
+</div>
+
+<Figure
+image={<Image src={`${basePath}/method.jpg`} alt="Method Overview Figure" />}
+caption={<></>}
+/>
+
+<div className="text-justify">
+_BecomingLit_ represents head avatars with 3D Gaussian primitives animated with FLAME parameters. The appearance is represented with a hybrid neural shading model, where the diffuse light transport is estimated with a neural network and specular reflectance is modeled with a Cook-Torrance BRDF, enableling all-frequency relighting with point lights and environment maps.
+</div>
+
+<div style={{ marginTop: '2rem' }}>
+### Point Light Relighting
+</div>
+
+<div className="">
+<PointLightViewer />
+</div>
+
+<div style={{ marginTop: '2rem' }}>
+### Environment Map Relighting
+</div>
+
+<div className="">
+    <InteractiveRelightViewer />
+</div>
+
+<div style={{ textAlign: 'center', marginTop: '3rem' }}>
+## BibTeX
+</div>
+
+<CodeBlock>
+```bibtex
+@inproceedings{
+  schmidt2025becominglit,
+  title={BecomingLit: Relightable Gaussian Avatars with Hybrid Neural Shading},
+  author={Jonathan Schmidt and Simon Giebenhain and Matthias Niessner},
+  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},
+  year={2025},
+}
+```
+</CodeBlock>
