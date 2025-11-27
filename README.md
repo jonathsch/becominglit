@@ -91,8 +91,8 @@ python -m becominglit.scripts.run_relight PATH/TO/RUN/FOLDER/config.yaml envmap_
 
 **Coming soon:**
 
-- [] Cross-reenactment script.
-- [] Animate avatars with arbitrary FLAME parameters from any source.
+- [ ] Cross-reenactment script.
+- [ ] Animate avatars with arbitrary FLAME parameters from any source.
 
 ## Acknowledgements
 
