@@ -39,13 +39,14 @@ def main(config: DictConfig):
     dataset = load_from_config(data_config)
     batch_transform_fn = dataset.batch_transform_fn
 
-    model = load_from_config(config.model)
+    model = load_from_config(config.model).to(device)
     load_checkpoint(
         config.train.ckpt_dir,
         modules={
             "model": model,
         },
     )
+    model.eval()
 
     # make output folder
     output_dir = Path(config.train.run_dir).joinpath("test")
@@ -63,7 +64,7 @@ def main(config: DictConfig):
         frame = batch["frame"].item()
         serial = batch["serial"][0]
 
-        preds = model(**filter_inputs(model, batch))
+        preds = model(**filter_inputs(batch, model))
 
         gt_img = image.linear2srgb(batch["image"])
         pred_img = image.linear2srgb(preds["rgb"])
@@ -74,8 +75,9 @@ def main(config: DictConfig):
         lpips_fn.update(pred_img, gt_img)
 
         save_image(
-            torch.cat([gt_img, pred_img, error], dim=-1, nrow=1, normalize=True, value_range=(0, 1)),
+            torch.cat([gt_img, pred_img, error], dim=-1),
             output_dir.joinpath(f"frame_{frame:06d}_cam_{serial}.jpg"),
+            nrow=1, normalize=True, value_range=(0, 1),
         )
 
     psnr_score = psnr_fn.compute().item()
