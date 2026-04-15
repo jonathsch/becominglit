@@ -89,10 +89,20 @@ With the following command you can visualize point-light and env-light spinning 
 python -m becominglit.scripts.run_relight PATH/TO/RUN/FOLDER/config.yaml envmap_path=PATH/TO/ENVMAP/file.hdr
 ```
 
-**Coming soon:**
+### Cross-reenactment
 
-- [ ] Cross-reenactment script.
-- [ ] Animate avatars with arbitrary FLAME parameters from any source.
+Drive the trained avatar's appearance with another subject's expressions and poses:
+```bash
+python -m becominglit.scripts.run_reenact PATH/TO/RUN/FOLDER/config.yaml driver_subject=XXXX driver_sequence=SEQ_NAME
+```
+
+### Animation with arbitrary FLAME parameters
+
+Animate the avatar with FLAME parameters from an external NPZ file. The NPZ should contain per-frame arrays: `expr` `[T, 100]`, `rotation` `[T, 3]`, `neck_pose` `[T, 3]`, `jaw_pose` `[T, 3]`, `eyes_pose` `[T, 6]`, `translation` `[T, 3]`. Identity parameters (shape, static offset) are taken from the trained model's subject.
+
+```bash
+python -m becominglit.scripts.run_animate PATH/TO/RUN/FOLDER/config.yaml flame_params_path=PATH/TO/PARAMS.npz
+```
 
 ## Acknowledgements
 
