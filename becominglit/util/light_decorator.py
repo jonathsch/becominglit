@@ -65,7 +65,7 @@ class EnvLightSpinDecorator(nn.Module):
         envmap_path: os.PathLike,
         assets: Mapping[str, torch.Tensor],
         envmap_dist: float = 10000.0,
-        env_scale: float = 18.0,
+        env_scale: float = 1.0,
         cycle: int = 256,
         ydown: bool = True,
     ) -> None:
@@ -80,6 +80,14 @@ class EnvLightSpinDecorator(nn.Module):
         self.LIGHT_MIN_RES = 16 * 2
 
         self.envmap_base = torch.as_tensor(iio.imread(envmap_path)).float()  # HDR map
+
+        # Normalize envmap by sin-weighted energy integral, then scale by env_scale.
+        # This ensures both diffuse and specular cubemap lookups are consistently scaled.
+        h = self.envmap_base.shape[0]
+        sin_weights = torch.sin((torch.arange(h, dtype=torch.float32) + 0.5) * np.pi / h)[:, None, None]
+        total_energy = (self.envmap_base * sin_weights).sum()
+        self.envmap_base = self.env_scale * self.envmap_base / total_energy
+
         cubemap = envmap.latlong_to_cubemap(self.envmap_base.cuda(), [512, 512])
         self.cubemap_mip = self.build_mips(cubemap)
 
@@ -140,11 +148,6 @@ class EnvLightSpinDecorator(nn.Module):
                 new_env = thf.avg_pool2d(new_env[None], 5, stride=1, padding=1)[0]
 
             new_env = thf.interpolate(new_env[None], (16, 32), mode="bilinear", antialias=True)[0]
-
-            new_env_sin = (
-                new_env * torch.sin((torch.arange(new_env.shape[1]) + 0.5) * np.pi / new_env.shape[1])[None, :, None]
-            )
-            new_env = self.env_scale * new_env / new_env_sin.sum()
 
             envmaps.append(new_env)
 

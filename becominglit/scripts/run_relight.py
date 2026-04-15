@@ -75,7 +75,8 @@ def main(config: DictConfig):
         "envmap_path must be specified in the config and exist."
     )
 
-    model_env = EnvLightSpinDecorator(model, config.envmap_path, assets, cycle=256, env_scale=8.0).to(device)
+    env_scale = config.get("env_scale", 1.0)
+    model_env = EnvLightSpinDecorator(model, config.envmap_path, assets, cycle=256, env_scale=env_scale).to(device)
     for i, batch in enumerate(tqdm(dataloader, desc="Rendering envmap frames")):
         batch = to_device(batch, device)
         batch_transform_fn(batch)

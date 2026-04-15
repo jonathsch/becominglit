@@ -165,7 +165,7 @@ def env_specular(preconv_envmap, fg_lut, refl_dirs, nrm, roughness, wo):
             filter_mode="linear-mipmap-linear",
             boundary_mode="cube",
         )
-    ) * 0.1
+    )
 
     return (spec * (fg_lookup[..., 0:1] + fg_lookup[..., 1:2])).squeeze(2)
 
