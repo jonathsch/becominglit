@@ -81,12 +81,12 @@ class EnvLightSpinDecorator(nn.Module):
 
         self.envmap_base = torch.as_tensor(iio.imread(envmap_path)).float()  # HDR map
 
-        # Normalize envmap by sin-weighted energy integral, then scale by env_scale.
-        # This ensures both diffuse and specular cubemap lookups are consistently scaled.
+        # Normalize envmap by mean sin-weighted energy, then scale by env_scale.
+        # Using mean (not sum) makes this resolution-independent.
         h = self.envmap_base.shape[0]
         sin_weights = torch.sin((torch.arange(h, dtype=torch.float32) + 0.5) * np.pi / h)[:, None, None]
-        total_energy = (self.envmap_base * sin_weights).sum()
-        self.envmap_base = self.env_scale * self.envmap_base / total_energy
+        mean_energy = (self.envmap_base * sin_weights).mean()
+        self.envmap_base = self.env_scale * self.envmap_base / mean_energy
 
         cubemap = envmap.latlong_to_cubemap(self.envmap_base.cuda(), [512, 512])
         self.cubemap_mip = self.build_mips(cubemap)
