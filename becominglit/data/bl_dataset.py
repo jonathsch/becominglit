@@ -160,8 +160,12 @@ class BecomingLitDataset(Dataset):
         return frame_list
 
     def load_assets(self):
-        mean_texture = Image.open(self.base_path.joinpath("assets", "color_mean.png"))
-        mean_texture = torch.as_tensor(np.array(mean_texture), dtype=torch.float32) / 255.0
+        try:
+            mean_texture = Image.open(self.base_path.joinpath("assets", "color_mean.png"))
+            mean_texture = torch.as_tensor(np.array(mean_texture), dtype=torch.float32) / 255.0
+        except Exception as e:
+            logger.warning(f"Failed to load mean texture, defaulting to 0.5. Error: {e}")
+            mean_texture = torch.full((1024, 1024, 3), 0.5, dtype=torch.float32)
 
         # light_positions
         light_meta_path = self.base_path / "calibration" / "light_pattern_metadata.json"

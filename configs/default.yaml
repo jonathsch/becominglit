@@ -4,7 +4,7 @@ data:
   class_name: becominglit.data.bl_dataset.BecomingLitDataset
   subject: ${subject}
   sequences_subset: ["EXP-2", "EMOTIONS", "SEN-1", "SEN-2", "SEN-3"]
-  downscale_factor: 4
+  downscale_factor: 2
   black_level_subtraction: 4.0
   fully_lit_only: false
   apply_alpha: true
@@ -80,6 +80,9 @@ loss:
       weight: 1e-2
       min_scale: 0.1
       max_scale: 20.0
+    negcolor:
+      loss_fn: "negcolor"
+      weight: 1e-1
     alpha_loss:
       loss_fn: "rgb_l2"
       weight: 1e-2

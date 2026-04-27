@@ -234,7 +234,8 @@ class BecomingLitModel(nn.Module):
             reflvec = torch.einsum("bxy,bny->bnx", lightrot, reflvec)
             specular = envmap.env_specular(envmap_mip, fg_lut, reflvec, nrm, sigma, wo_local) * spec_vis  # [B, N, 3]
 
-        color = diffuse + specular
+        preds["diff_color"] = diffuse
+        color = diffuse.clamp_min(0.0) + specular
 
         # render
         if render_auxiliary:
@@ -285,15 +286,12 @@ class BecomingLitModel(nn.Module):
         # base geometry
         if verts is None:
             verts = self.flame_mod.forward(flame_params)  # [B, V, 3]
-        eyes_mask = self.flame_mod.uv_mask_eyes
         tbn_frame_uv = self.flame_mod.get_tbn(verts)
 
         # Position
         pos_base = self.flame_mod.get_base_pos(verts)  # [B, U, V, 3]
         static_offset = self.means[None]  # [1, U, V, 3]
-        gb_pos = (
-            pos_base + ((tbn_frame_uv @ static_offset[..., None]).squeeze(-1) + f_geo[..., :3]) * eyes_mask
-        )  # [B, U, V, 3]
+        gb_pos = pos_base + (tbn_frame_uv @ static_offset[..., None]).squeeze(-1) + f_geo[..., :3]  # [B, U, V, 3]
 
         # Rotation
         gb_quats = f_geo[..., 3:7]  # [B, U, V, 4]
@@ -307,7 +305,7 @@ class BecomingLitModel(nn.Module):
 
         # Normals
         local_normals = f_spec[..., 1:]
-        gb_normals = thf.normalize(tbn_frame_uv[..., 2] + local_normals * eyes_mask, dim=-1)  # [B, U, V, 3]
+        gb_normals = thf.normalize(tbn_frame_uv[..., 2] + local_normals, dim=-1)  # [B, U, V, 3]
 
         return {
             "means": gb_pos,

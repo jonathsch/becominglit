@@ -127,7 +127,9 @@ def rgb_l1(
     src_key: str = "rgb",
     tgt_key: str = "image",
 ):
-    return (preds[src_key] - targets[tgt_key]).abs().mean()
+    clamp_mask = targets[tgt_key] > 0.98
+    preds_src = torch.where(clamp_mask, preds[src_key].clamp(0.0, 1.0), preds[src_key])
+    return (preds_src - targets[tgt_key]).abs().mean()
 
 
 @register_loss_by_fn()
@@ -147,7 +149,9 @@ def rgb_ssim(
     src_key: str = "rgb",
     tgt_key: str = "image",
 ):
-    return (1.0 - fused_ssim(preds[src_key], targets[tgt_key])).mean()
+    clamp_mask = targets[tgt_key] > 0.98
+    preds_src = torch.where(clamp_mask, preds[src_key].clamp(0.0, 1.0), preds[src_key])
+    return (1.0 - fused_ssim(preds_src, targets[tgt_key])).mean()
 
 
 @register_loss_by_fn("bound_primscale_rgca")

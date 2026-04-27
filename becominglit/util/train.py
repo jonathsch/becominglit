@@ -110,10 +110,6 @@ def train_loop(
         nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True, foreach=True)
         optimizer.step()
 
-        # clamp material to reasonable values
-        if hasattr(model, "albedo"):
-            model.albedo.data.clamp_(0.0, 1.0)
-
         # logging
         if iteration % config.train.log_every_n_steps == 0:
             loss_dict = {k.replace("loss_", ""): v for k, v in loss_dict.items() if k.startswith("loss_")}
