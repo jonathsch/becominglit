@@ -16,7 +16,10 @@ from becominglit.data.bl_dataset import (
     worker_init_fn,
 )
 from becominglit.util import image
+from becominglit.util.gaussian_mesh import render_gaussian_ellipsoids
+from becominglit.util.lbs import batch_rodrigues
 from becominglit.util.light_decorator import EnvLightSpinDecorator, PointLightPathDecorator
+from becominglit.util.mesh import NVDiffRenderer
 from becominglit.util.module_loader import load_from_config
 from becominglit.util.torchutils import load_checkpoint, to_device
 
@@ -50,6 +53,48 @@ def main(config: DictConfig):
         },
     )
 
+    # Renderer for the Gaussian-as-ellipsoid-mesh visualization. Use the OpenGL
+    # backend (as the FLAME tracker does on these nodes): the CUDA rasterizer
+    # requires resolutions divisible by 8, which the render size here is not.
+    gauss_renderer = NVDiffRenderer(use_opengl=True, lighting_type="front").to(device)
+
+    # One fixed random color per Gaussian, kept consistent across all frames.
+    n_gauss = int(model.flame_mod.valid_mask.sum().item())
+    gauss_colors = torch.rand(n_gauss, 3, generator=torch.Generator(device=device).manual_seed(0), device=device)
+
+    @torch.no_grad()
+    def gaussian_mesh_vis(batch, preds):
+        """Render the posed Gaussians as a solid ellipsoid mesh from the input view.
+
+        The model works in head-relative space, so the camera is composed with the
+        FLAME head pose (rotation + translation), exactly as in the model forward.
+        """
+        valid = model.flame_mod.valid_mask.squeeze(-1)  # [U, V]
+        flame_params = batch["flame_params"]
+        bs = batch["Rt"].shape[0]
+        head_pose = torch.eye(4, device=device)[None].repeat(bs, 1, 1)
+        head_pose[:, :3, :3] = batch_rodrigues(flame_params["rotation"])
+        head_pose[:, :3, 3] = flame_params["translation"]
+        rt_headrel = batch["Rt"] @ head_pose
+        h, w = preds["rgb"].shape[-2:]
+        # Model works in mm; render in meters so the head is within the clip planes.
+        scene_scale = 1e-3 if dataset.length_unit == "mm" else 1.0
+        rgb = render_gaussian_ellipsoids(
+            gauss_renderer,
+            preds["means"][0][valid],
+            preds["scales"][0][valid],
+            preds["quats"][0][valid],
+            rt_headrel,
+            batch["K"],
+            (h, w),
+            opacity=preds["opacities"][0][valid],
+            opacity_thresh=0.01,
+            level=0,
+            scene_scale=scene_scale,
+            colors=gauss_colors,
+        )
+        return rgb.permute(0, 3, 1, 2)  # [1, 3, H, W], display-space [0, 1]
+
     # output folders
     output_dir = Path(config.train.run_dir).joinpath("relight")
     point_light_dir = output_dir.joinpath("point_light")
@@ -67,7 +112,9 @@ def main(config: DictConfig):
 
         preds = model_point(**batch, index=[i], render_auxiliary=True)
 
-        img = make_grid(image.linear2srgb(preds["rgb"]).clamp(0, 1)).permute(1, 2, 0).mul(255).byte().cpu().numpy()
+        rgb = image.linear2srgb(preds["rgb"]).clamp(0, 1)
+        gauss = gaussian_mesh_vis(batch, preds)  # [1, 3, H, W], already display-space
+        img = make_grid(torch.cat([rgb, gauss], dim=0)).permute(1, 2, 0).mul(255).byte().cpu().numpy()
         Image.fromarray(img).save(point_light_dir.joinpath(f"{i:06d}.jpg"))
 
     # envmap rendering
@@ -83,11 +130,12 @@ def main(config: DictConfig):
 
         preds = model_env(**batch, index=[i], render_auxiliary=True)
 
-        rgb = preds["rgb"]
-        diffuse = preds["render_diffuse"]
-        specular = preds["render_specular"]
+        rgb = image.linear2srgb(preds["rgb"]).clamp(0, 1)
+        diffuse = image.linear2srgb(preds["render_diffuse"]).clamp(0, 1)
+        specular = image.linear2srgb(preds["render_specular"]).clamp(0, 1)
+        gauss = gaussian_mesh_vis(batch, preds)  # already display-space [0, 1]
 
-        grid_img = image.linear2srgb(make_grid(torch.cat([rgb, diffuse, specular], dim=0))).clamp(0, 1)
+        grid_img = make_grid(torch.cat([rgb, diffuse, specular, gauss], dim=0))
         grid_img = grid_img.permute(1, 2, 0).mul(255).byte().cpu().numpy()
         Image.fromarray(grid_img).save(env_light_dir.joinpath(f"{batch['frame'].item():06d}.jpg"))
 
